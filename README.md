@@ -84,7 +84,7 @@ ScrcpyDock is completely self-contained. It comes bundled with the official `scr
 3. Enable **USB Debugging** on your Android phone:
    - Go to `Settings > About Phone` and tap **Build Number** 7 times.
    - Go to `Developer Options` and enable **USB Debugging**.
-4. Double click **`scrcpy_premium_panel.exe`** (ScrcpyDock) and click **Start Mirroring**!
+4. Double click **`ScrcpyDock.exe`** (or run the installer `ScrcpyDock-v1.0.0-windows-setup-x64.exe`) and click **Start Mirroring**!
 
 ---
 

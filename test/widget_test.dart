@@ -8,7 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:scrcpy_premium_panel/main.dart';
+import 'package:scrcpydock/main.dart';
 
 void main() {
   testWidgets('Scrcpy panel smoke test', (WidgetTester tester) async {

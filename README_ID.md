@@ -84,7 +84,7 @@ ScrcpyDock sudah dilengkapi dengan binari resmi `scrcpy`, `adb`, dan codec DLL F
 3. Aktifkan **USB Debugging** di ponsel Android kamu:
    - Buka `Pengaturan > Tentang Ponsel` lalu ketuk **Nomor Bentukan (Build Number)** sebanyak 7 kali.
    - Buka menu `Opsi Pengembang (Developer Options)` dan aktifkan **USB Debugging**.
-4. Buka **`scrcpy_premium_panel.exe`** (ScrcpyDock) dan klik tombol biru **Mulai Mirroring**!
+4. Buka **`ScrcpyDock.exe`** (atau jalankan installer `ScrcpyDock-v1.0.0-windows-setup-x64.exe`) dan klik tombol biru **Mulai Mirroring**!
 
 ---
 
