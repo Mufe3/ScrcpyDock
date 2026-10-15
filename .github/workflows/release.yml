@@ -134,6 +134,18 @@ jobs:
           find artifacts -type f -exec cp {} release-files/ \;
           ls -la release-files
 
+      - name: Clean up obsolete release assets
+        run: |
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/${{ github.ref_name }} --jq '.id' 2>/dev/null || echo "")
+          if [ -n "$RELEASE_ID" ]; then
+            for asset_id in $(gh api repos/${{ github.repository }}/releases/$RELEASE_ID/assets --jq '.[] | select(.name | endswith(".sha256") or . == "ScrcpyDock-v1.0.0-windows-x64.zip") | .id'); do
+              echo "Deleting obsolete asset: $asset_id"
+              gh api -X DELETE repos/${{ github.repository }}/releases/assets/$asset_id || true
+            done
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release with All Platforms
         uses: softprops/action-gh-release@v2
         with:
