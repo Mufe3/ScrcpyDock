@@ -36,7 +36,7 @@ jobs:
         shell: pwsh
         run: |
           $releaseDir = "build\windows\x64\runner\Release"
-          $zipName = "ScrcpyDock-${{ github.ref_name }}-windows-x64.zip"
+          $zipName = "ScrcpyDock-${{ github.ref_name }}-windows-portable-x64.zip"
           Compress-Archive -Path "$releaseDir\*" -DestinationPath $zipName -Force
 
       - name: Build Windows Setup Installer
@@ -50,7 +50,7 @@ jobs:
           name: windows-release
           path: |
             ScrcpyDock-*-windows-setup-x64.exe
-            ScrcpyDock-*-windows-x64.zip
+            ScrcpyDock-*-windows-portable-x64.zip
 
   build-linux:
     name: Build Linux x64
@@ -152,7 +152,7 @@ jobs:
             | Platform | File | Type | Description |
             | :--- | :--- | :--- | :--- |
             | **Windows** | `ScrcpyDock-${{ github.ref_name }}-windows-setup-x64.exe` | **Installer (Recommended)** | Single-click setup with desktop icon & Start menu. |
-            | **Windows** | `ScrcpyDock-${{ github.ref_name }}-windows-x64.zip` | Portable Zip | Standalone portable bundle. Extract and run `ScrcpyDock.exe`. |
+            | **Windows** | `ScrcpyDock-${{ github.ref_name }}-windows-portable-x64.zip` | Portable Zip | Standalone portable bundle. Extract and run `ScrcpyDock.exe`. |
             | **macOS** | `ScrcpyDock-${{ github.ref_name }}-macos.zip` | Universal App | Extract `.app` and move to `/Applications`. |
             | **Linux** | `ScrcpyDock-${{ github.ref_name }}-linux-x64.tar.gz` | Tarball | Standalone 64-bit Linux bundle. |
 
