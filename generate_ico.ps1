@@ -18,8 +18,15 @@ function Create-TrueColorIco {
         $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
         $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
         $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+        # Preserve natural aspect ratio and center on transparent square canvas
+        $scale = [Math]::Min($size / [double]$srcBmp.Width, $size / [double]$srcBmp.Height)
+        $destWidth = [int][Math]::Round($srcBmp.Width * $scale)
+        $destHeight = [int][Math]::Round($srcBmp.Height * $scale)
+        $destX = [int][Math]::Round(($size - $destWidth) / 2.0)
+        $destY = [int][Math]::Round(($size - $destHeight) / 2.0)
+
         $g.Clear([System.Drawing.Color]::Transparent)
-        $g.DrawImage($srcBmp, 0, 0, $size, $size)
+        $g.DrawImage($srcBmp, $destX, $destY, $destWidth, $destHeight)
         $g.Dispose()
 
         # Build 32-bit ARGB DIB for ICO:
