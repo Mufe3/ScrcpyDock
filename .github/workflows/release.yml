@@ -126,9 +126,8 @@ jobs:
         run: |
           ZIP_NAME="ScrcpyDock-${{ github.ref_name }}-macos.zip"
           SHA_NAME="ScrcpyDock-${{ github.ref_name }}-macos.sha256"
-          cd build/macos/Build/Products/Release
-          zip -r "../../../../$ZIP_NAME" *.app
-          cd ../../../..
+          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app" -maxdepth 1 | head -n 1)
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_NAME"
           shasum -a 256 "$ZIP_NAME" > "$SHA_NAME"
 
       - name: Upload macOS Artifact
@@ -161,6 +160,32 @@ jobs:
           files: release-files/*
           draft: false
           prerelease: false
-          generate_release_notes: true
+          name: "ScrcpyDock ${{ github.ref_name }} - Official Release"
+          body: |
+            ## 🚀 ScrcpyDock ${{ github.ref_name }}
+
+            Thank you for supporting **ScrcpyDock**! The lightweight, ultra-responsive visual dock controller for Scrcpy & Android.
+
+            ### 📦 Download Packages
+
+            | Platform | File | Type | Description |
+            | :--- | :--- | :--- | :--- |
+            | **Windows** | `ScrcpyDock-${{ github.ref_name }}-windows-setup-x64.exe` | **Installer (Recommended)** | Single-click setup with desktop icon & Start menu. |
+            | **Windows** | `ScrcpyDock-${{ github.ref_name }}-windows-x64.zip` | Portable Zip | Standalone portable bundle. Extract and run `ScrcpyDock.exe`. |
+            | **macOS** | `ScrcpyDock-${{ github.ref_name }}-macos.zip` | Universal App | Extract `.app` and move to `/Applications`. |
+            | **Linux** | `ScrcpyDock-${{ github.ref_name }}-linux-x64.tar.gz` | Tarball | Standalone 64-bit Linux bundle. |
+
+            ---
+
+            ### ✨ Key Features
+            - 🎯 **Magnetic Window Docking**: Automatically attaches Scrcpy right next to the panel.
+            - ⚡ **Zero-Latency USB & Wi-Fi Mirroring**: High FPS, custom bitrate, resolution & H.264/H.265.
+            - 📹 **HD Webcam & Studio Mic**: Turn your Android phone into an ultra-sharp PC webcam or microphone.
+            - 🤖 **MacroDock Engine**: Record screen gestures (taps, swipes, delays) and replay infinitely.
+            - 📱 **Multi-Device Grid Runner**: Connect and mirror multiple phones simultaneously in clean grid formation.
+            - 🛠️ **Smart Engine Assistant**: Built-in dependency helper for macOS & Linux (`brew` / `apt` commands).
+
+            ---
+            *Verify release integrity with the corresponding `.sha256` checksum files.*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
