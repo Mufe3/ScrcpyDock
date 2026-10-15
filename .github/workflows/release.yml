@@ -37,32 +37,20 @@ jobs:
         run: |
           $releaseDir = "build\windows\x64\runner\Release"
           $zipName = "ScrcpyDock-${{ github.ref_name }}-windows-x64.zip"
-          $shaName = "ScrcpyDock-${{ github.ref_name }}-windows-x64.sha256"
-
           Compress-Archive -Path "$releaseDir\*" -DestinationPath $zipName -Force
-          $hash = (Get-FileHash -Path $zipName -Algorithm SHA256).Hash.ToLower()
-          "$hash  $zipName" | Out-File -FilePath $shaName -Encoding ascii
 
       - name: Build Windows Setup Installer
         shell: pwsh
         run: |
           & "iscc" /DMyAppVersion="${{ github.ref_name }}" installer.iss
-          $setupExe = Get-ChildItem -Filter "ScrcpyDock-*-setup-x64.exe" | Select-Object -First 1
-          if ($setupExe) {
-            $setupSha = "$($setupExe.Name).sha256"
-            $hash = (Get-FileHash -Path $setupExe.FullName -Algorithm SHA256).Hash.ToLower()
-            "$hash  $($setupExe.Name)" | Out-File -FilePath $setupSha -Encoding ascii
-          }
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
           path: |
-            ScrcpyDock-*-windows-x64.zip
-            ScrcpyDock-*-windows-x64.sha256
             ScrcpyDock-*-windows-setup-x64.exe
-            ScrcpyDock-*-windows-setup-x64.exe.sha256
+            ScrcpyDock-*-windows-x64.zip
 
   build-linux:
     name: Build Linux x64
@@ -91,17 +79,13 @@ jobs:
       - name: Package Linux Tarball
         run: |
           ZIP_NAME="ScrcpyDock-${{ github.ref_name }}-linux-x64.tar.gz"
-          SHA_NAME="ScrcpyDock-${{ github.ref_name }}-linux-x64.sha256"
           tar -czvf "$ZIP_NAME" -C build/linux/x64/release/bundle .
-          sha256sum "$ZIP_NAME" > "$SHA_NAME"
 
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-release
-          path: |
-            ScrcpyDock-*-linux-x64.tar.gz
-            ScrcpyDock-*-linux-x64.sha256
+          path: ScrcpyDock-*-linux-x64.tar.gz
 
   build-macos:
     name: Build macOS Universal
@@ -125,18 +109,14 @@ jobs:
       - name: Package macOS Zip
         run: |
           ZIP_NAME="ScrcpyDock-${{ github.ref_name }}-macos.zip"
-          SHA_NAME="ScrcpyDock-${{ github.ref_name }}-macos.sha256"
           APP_PATH=$(find build/macos/Build/Products/Release -name "*.app" -maxdepth 1 | head -n 1)
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_NAME"
-          shasum -a 256 "$ZIP_NAME" > "$SHA_NAME"
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-release
-          path: |
-            ScrcpyDock-*-macos.zip
-            ScrcpyDock-*-macos.sha256
+          path: ScrcpyDock-*-macos.zip
 
   publish-release:
     name: Publish Multi-Platform GitHub Release
@@ -160,6 +140,7 @@ jobs:
           files: release-files/*
           draft: false
           prerelease: false
+          make_latest: true
           name: "ScrcpyDock ${{ github.ref_name }} - Official Release"
           body: |
             ## 🚀 ScrcpyDock ${{ github.ref_name }}
@@ -186,6 +167,6 @@ jobs:
             - 🛠️ **Smart Engine Assistant**: Built-in dependency helper for macOS & Linux (`brew` / `apt` commands).
 
             ---
-            *Verify release integrity with the corresponding `.sha256` checksum files.*
+            *Verify release integrity using GitHub's automatic SHA-256 hash displayed next to each download.*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
