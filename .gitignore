@@ -6,6 +6,8 @@
 *.mp4
 ScrcpyDock-*.zip
 ScrcpyDock-*.sha256
+ScrcpyDock-*.exe
+ScrcpyDock-*.exe.sha256
 .DS_Store
 .atom/
 .build/

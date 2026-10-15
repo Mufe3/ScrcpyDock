@@ -1899,6 +1899,243 @@ class _DashboardPanelState extends State<DashboardPanel> with WindowListener {
     );
   }
 
+  Future<bool> _isEngineAvailable(String pathOrCmd) async {
+    try {
+      if (pathOrCmd.contains('/') || pathOrCmd.contains('\\')) {
+        return File(pathOrCmd).existsSync();
+      }
+      final res = await Process.run(pathOrCmd, ['--version']).timeout(const Duration(seconds: 2));
+      return res.exitCode == 0 || res.stdout.toString().isNotEmpty || res.stderr.toString().isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _showEngineMissingDialog() {
+    if (!mounted) return;
+    int selectedPlatform = Platform.isMacOS ? 0 : (Platform.isLinux ? 1 : 2);
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final t = PanelTheme(appThemeModeNotifier.value);
+        return StatefulBuilder(
+          builder: (context, setDlgState) {
+            String commandText = '';
+            String platformTitle = '';
+            String packageManagerNote = '';
+
+            if (selectedPlatform == 0) {
+              platformTitle = 'macOS (Homebrew)';
+              commandText = 'brew install scrcpy android-platform-tools';
+              packageManagerNote = tr(
+                'Make sure Homebrew is installed, then paste this into Terminal.',
+                'Pastikan Homebrew terpasang, lalu tempel ke Terminal.',
+              );
+            } else if (selectedPlatform == 1) {
+              platformTitle = 'Linux (Ubuntu / Debian / Arch / Fedora)';
+              commandText = 'sudo apt update && sudo apt install -y scrcpy adb';
+              packageManagerNote = tr(
+                'For Ubuntu/Debian/Mint. (Arch: sudo pacman -S scrcpy android-tools | Fedora: sudo dnf install scrcpy android-tools)',
+                'Untuk Ubuntu/Debian/Mint. (Arch: sudo pacman -S scrcpy android-tools | Fedora: sudo dnf install scrcpy android-tools)',
+              );
+            } else {
+              platformTitle = 'Windows (Winget / Standalone)';
+              commandText = 'winget install Genymobile.scrcpy';
+              packageManagerNote = tr(
+                'Run in PowerShell or Windows Terminal to install Scrcpy globally.',
+                'Jalankan di PowerShell atau Windows Terminal untuk install Scrcpy global.',
+              );
+            }
+
+            return AlertDialog(
+              backgroundColor: t.bgCard,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: t.borderPrimary),
+              ),
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE5534B).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFF85149)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      tr('Scrcpy & ADB Engine Required', 'Engine Scrcpy & ADB Diperlukan'),
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: t.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 380,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      tr(
+                        'ScrcpyDock is a visual dock controller that powers the official Scrcpy and ADB engines. On macOS and Linux, please install Scrcpy & ADB via your terminal to start mirroring.',
+                        'ScrcpyDock adalah dock controller visual untuk engine resmi Scrcpy & ADB. Di macOS dan Linux, silakan pasang Scrcpy & ADB via terminal agar HP dapat di-mirror.',
+                      ),
+                      style: TextStyle(fontSize: 10, color: t.textSecondary, height: 1.4),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _buildPlatformTab(0, 'macOS', selectedPlatform == 0, () => setDlgState(() => selectedPlatform = 0), t),
+                        const SizedBox(width: 6),
+                        _buildPlatformTab(1, 'Linux', selectedPlatform == 1, () => setDlgState(() => selectedPlatform = 1), t),
+                        const SizedBox(width: 6),
+                        _buildPlatformTab(2, 'Windows', selectedPlatform == 2, () => setDlgState(() => selectedPlatform = 2), t),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: t.isDark ? const Color(0xFF0D1117) : const Color(0xFFF6F8FA),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: t.borderPrimary),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                platformTitle,
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: t.textSecondary),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: commandText));
+                                  _showToast(tr('Command copied to clipboard!', 'Perintah disalin ke clipboard!'));
+                                },
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.copy_rounded, size: 11, color: t.isDark ? const Color(0xFF58A6FF) : const Color(0xFF0969DA)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        tr('Copy', 'Salin'),
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: t.isDark ? const Color(0xFF58A6FF) : const Color(0xFF0969DA),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          SelectableText(
+                            commandText,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF3FB950),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            packageManagerNote,
+                            style: TextStyle(fontSize: 8.5, color: t.textSecondary.withValues(alpha: 0.8), height: 1.25),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: TextButton.styleFrom(
+                    foregroundColor: t.textSecondary,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  ),
+                  child: Text(tr('Close', 'Tutup'), style: const TextStyle(fontSize: 10)),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final scrcpyOk = await _isEngineAvailable(scrcpyExePath);
+                    final adbOk = await _isEngineAvailable(adbExePath);
+                    if (scrcpyOk && adbOk) {
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      _showToast(tr('Engine detected successfully!', 'Engine Scrcpy & ADB berhasil terdeteksi!'));
+                      _checkAdbConnection();
+                    } else {
+                      _showToast(tr('Engine still not detected. Please run the command first.', 'Engine belum terdeteksi. Silakan jalankan perintah di atas terlebih dahulu.'));
+                    }
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 12),
+                  label: Text(
+                    tr('Check Again', 'Cek Ulang'),
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF238636),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    elevation: 0,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPlatformTab(int index, String label, bool isSelected, VoidCallback onTap, PanelTheme t) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          decoration: BoxDecoration(
+            color: isSelected ? (t.isDark ? const Color(0xFF21262D) : const Color(0xFFE1E4E8)) : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isSelected ? (t.isDark ? const Color(0xFF58A6FF) : const Color(0xFF0969DA)) : t.borderPrimary,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? (t.isDark ? const Color(0xFF58A6FF) : const Color(0xFF0969DA)) : t.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   bool _isSameSubnet(String ip1, String ip2) {
     if (ip1.isEmpty || ip2.isEmpty) return false;
@@ -3214,6 +3451,12 @@ class _DashboardPanelState extends State<DashboardPanel> with WindowListener {
   }
 
   void _startMirroring() async {
+    final isScrcpyAvailable = await _isEngineAvailable(scrcpyExePath);
+    if (!isScrcpyAvailable) {
+      if (mounted) _showEngineMissingDialog();
+      return;
+    }
+
     if (_connectionStatus != 'Connected' || (_connectedDevicesList.isEmpty && _connectedDevices.isEmpty)) {
       _showToast(tr('No Android device connected. Please connect via USB or Wi-Fi first.', 'Tidak ada HP Android terhubung. Sambungkan via USB atau Wi-Fi terlebih dahulu.'));
       return;
@@ -3426,6 +3669,9 @@ class _DashboardPanelState extends State<DashboardPanel> with WindowListener {
       if (mounted) setState(() {});
     } catch (e) {
       debugPrint("Gagal menjalankan scrcpy: $e");
+      if (mounted) {
+        _showEngineMissingDialog();
+      }
     }
   }
 
@@ -3545,6 +3791,9 @@ class _DashboardPanelState extends State<DashboardPanel> with WindowListener {
       _showToast(tr("Opening mirror for $winTitle...", "Membuka mirror untuk $winTitle..."));
     } catch (e) {
       _showToast(tr("Failed to mirror $serial: $e", "Gagal mirror $serial: $e"));
+      if (mounted) {
+        _showEngineMissingDialog();
+      }
     }
   }
 
@@ -9144,6 +9393,22 @@ class _DashboardPanelState extends State<DashboardPanel> with WindowListener {
             icon: Icon(Icons.bookmark_border_rounded, size: 12, color: t.textSecondary),
             label: Text(
               tr('Open Macro Folder', 'Buka Folder Makro'),
+              style: TextStyle(fontSize: 9, color: t.textSecondary),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Center(
+          child: TextButton.icon(
+            onPressed: () => _showEngineMissingDialog(),
+            icon: Icon(Icons.terminal_rounded, size: 12, color: t.textSecondary),
+            label: Text(
+              tr('Scrcpy & ADB Engine Setup', 'Panduan Engine Scrcpy & ADB'),
               style: TextStyle(fontSize: 9, color: t.textSecondary),
             ),
             style: TextButton.styleFrom(

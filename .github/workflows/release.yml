@@ -1,4 +1,4 @@
-name: Build & Release ScrcpyDock
+name: Build & Release ScrcpyDock Multi-Platform
 
 on:
   push:
@@ -13,7 +13,6 @@ jobs:
   build-windows:
     name: Build Windows x64 Portable
     runs-on: windows-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -33,29 +32,133 @@ jobs:
       - name: Build Windows Application
         run: flutter build windows --release
 
-      - name: Package Portable Zip
+      - name: Package Portable Windows Zip
         shell: pwsh
         run: |
           $releaseDir = "build\windows\x64\runner\Release"
           $zipName = "ScrcpyDock-${{ github.ref_name }}-windows-x64.zip"
           $shaName = "ScrcpyDock-${{ github.ref_name }}-windows-x64.sha256"
 
-          # Compress to zip
           Compress-Archive -Path "$releaseDir\*" -DestinationPath $zipName -Force
-
-          # Calculate SHA-256
           $hash = (Get-FileHash -Path $zipName -Algorithm SHA256).Hash.ToLower()
           "$hash  $zipName" | Out-File -FilePath $shaName -Encoding ascii
 
-          Write-Output "Zip created: $zipName"
-          Write-Output "SHA-256: $hash"
+      - name: Build Windows Setup Installer
+        shell: pwsh
+        run: |
+          & "iscc" /DMyAppVersion="${{ github.ref_name }}" installer.iss
+          $setupExe = Get-ChildItem -Filter "ScrcpyDock-*-setup-x64.exe" | Select-Object -First 1
+          if ($setupExe) {
+            $setupSha = "$($setupExe.Name).sha256"
+            $hash = (Get-FileHash -Path $setupExe.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($setupExe.Name)" | Out-File -FilePath $setupSha -Encoding ascii
+          }
 
-      - name: Create GitHub Release & Upload Assets
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            ScrcpyDock-*-windows-x64.zip
+            ScrcpyDock-*-windows-x64.sha256
+            ScrcpyDock-*-windows-setup-x64.exe
+            ScrcpyDock-*-windows-setup-x64.exe.sha256
+
+  build-linux:
+    name: Build Linux x64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Linux Application
+        run: flutter build linux --release
+
+      - name: Package Linux Tarball
+        run: |
+          ZIP_NAME="ScrcpyDock-${{ github.ref_name }}-linux-x64.tar.gz"
+          SHA_NAME="ScrcpyDock-${{ github.ref_name }}-linux-x64.sha256"
+          tar -czvf "$ZIP_NAME" -C build/linux/x64/release/bundle .
+          sha256sum "$ZIP_NAME" > "$SHA_NAME"
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: |
+            ScrcpyDock-*-linux-x64.tar.gz
+            ScrcpyDock-*-linux-x64.sha256
+
+  build-macos:
+    name: Build macOS Universal
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build macOS Application
+        run: flutter build macos --release
+
+      - name: Package macOS Zip
+        run: |
+          ZIP_NAME="ScrcpyDock-${{ github.ref_name }}-macos.zip"
+          SHA_NAME="ScrcpyDock-${{ github.ref_name }}-macos.sha256"
+          cd build/macos/Build/Products/Release
+          zip -r "../../../../$ZIP_NAME" *.app
+          cd ../../../..
+          shasum -a 256 "$ZIP_NAME" > "$SHA_NAME"
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: |
+            ScrcpyDock-*-macos.zip
+            ScrcpyDock-*-macos.sha256
+
+  publish-release:
+    name: Publish Multi-Platform GitHub Release
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Platform Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten Artifact Directory
+        run: |
+          mkdir -p release-files
+          find artifacts -type f -exec cp {} release-files/ \;
+          ls -la release-files
+
+      - name: Create GitHub Release with All Platforms
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ScrcpyDock-*.zip
-            ScrcpyDock-*.sha256
+          files: release-files/*
           draft: false
           prerelease: false
           generate_release_notes: true
