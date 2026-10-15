@@ -1,0 +1,52 @@
+name: 🐛 Bug Report
+description: File a bug report to help improve ScrcpyDock
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this issue! Please provide as much detail as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this behavior?
+      placeholder: |
+        1. Connect phone via USB...
+        2. Click 'Start Mirroring'...
+        3. See error...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection_mode
+    attributes:
+      label: Connection Mode
+      options:
+        - USB Cable
+        - Wireless ADB (Wi-Fi TCP/IP)
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Info
+      description: Windows version, Android phone brand/model, and Android OS version.
+      placeholder: |
+        - OS: Windows 11 64-bit
+        - Phone: Samsung Galaxy S23 / Xiaomi Poco F4
+        - Android Version: Android 13 / 14
+    validations:
+      required: true
